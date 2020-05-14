@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"sync"
 	"unsafe"
-	"github.com/xuperdata/pailliersdk/xchain_plugin/pb"
+	"github.com/hongyanwang/pailliersdk/xchain_plugin/pb"
 )
 
 var get_rand = (*[0]byte)(unsafe.Pointer(C.paillier_get_rand_devurandom))

@@ -1,4 +1,4 @@
-module github.com/xuperdata/pailliersdk
+module github.com/hongyanwang/pailliersdk
 
 go 1.12
 

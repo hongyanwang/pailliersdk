@@ -8,8 +8,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"gopkg.in/yaml.v2"
 
-	"github.com/xuperdata/pailliersdk"
-	"github.com/xuperdata/pailliersdk/xchain_plugin/pb"
+	"github.com/hongyanwang/pailliersdk"
+	"github.com/hongyanwang/pailliersdk/xchain_plugin/pb"
 )
 
 var (
