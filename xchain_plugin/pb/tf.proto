@@ -1,6 +1,6 @@
 syntax = "proto3";
 option optimize_for = LITE_RUNTIME;
-option go_package = "github.com/xuperdata/pailliersdk/xchain_plugin/pb";
+option go_package = "github.com/hongyanwang/pailliersdk/xchain_plugin/pb";
 
 message SyscallHeader {
   int64 ctxid = 1;
