@@ -16,17 +16,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hongyanwang/pailliersdk/xchain_plugin/pb"
 	"math/big"
 	"strconv"
 	"sync"
 	"unsafe"
-	"github.com/hongyanwang/pailliersdk/xchain_plugin/pb"
 )
 
 var get_rand = (*[0]byte)(unsafe.Pointer(C.paillier_get_rand_devurandom))
-var secbit  int
-//var length = secbit/4
-var length int
+var secbit = 1024
+var length = secbit/4
 
 type PaillierClient struct {}
 var kInstance *PaillierClient
@@ -54,7 +53,7 @@ func (s *PaillierClient) Submit(method string, inputs string) (string, error) {
 
 	var resMapStr string
 	switch caller.Method {
-	case "KeyGen":
+	case "PaillierKeyGen":
 		resMapStr, err = KeyGenToMap(caller)
 	case "PaillierEnc":
 		resMapStr, err = PaillierEncToMap(caller)
@@ -115,7 +114,6 @@ func PaillierEncToMap(caller FuncCaller) (string, error){
 	return string(resStr), nil
 }
 
-
 func PaillierDecToMap(caller FuncCaller) (string, error){
 	if caller.Args == "" {
 		return "", errors.New("PaillierDec errors, args nil")
@@ -135,7 +133,6 @@ func PaillierDecToMap(caller FuncCaller) (string, error){
 	return string(resStr), nil
 }
 
-
 func PaillierMulToMap(caller FuncCaller) (string, error){
 	if caller.Args == "" {
 		return "", errors.New("PaillierMul errors, args nil")
@@ -143,6 +140,15 @@ func PaillierMulToMap(caller FuncCaller) (string, error){
 	var params pb.PaillierMulParams
 	json.Unmarshal([]byte(caller.Args), &params)
 
+	// authorization check
+	v := CheckCommitment(params.Ciphertext1, caller.Address, params.Commitment1)
+	if v != true {
+		return "", errors.New("not authorized to use ciphertext1")
+	}
+	v = CheckCommitment(params.Ciphertext2, caller.Address, params.Commitment2)
+	if v != true {
+		return "", errors.New("not authorized to use ciphertext2")
+	}
 
 	cipher := PaillierMul(params.PublicKey, params.Ciphertext1, params.Ciphertext2)
 	outputs := pb.PaillierMulOutputs{
@@ -156,13 +162,18 @@ func PaillierMulToMap(caller FuncCaller) (string, error){
 	return string(resStr), nil
 }
 
-
 func PaillierExpToMap(caller FuncCaller) (string, error){
 	if caller.Args == "" {
 		return "", errors.New("PaillierExp errors, args nil")
 	}
 	var params pb.PaillierExpParams
 	json.Unmarshal([]byte(caller.Args), &params)
+
+	// authorization check
+	v := CheckCommitment(params.Ciphertext, caller.Address, params.Commitment)
+	if v != true {
+		return "", errors.New("not authorized to use ciphertext")
+	}
 
 	scalarInput,_ := strconv.Atoi(params.Scalar)
 	cipher := PaillierExp(params.PublicKey, params.Ciphertext, uint32(scalarInput))

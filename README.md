@@ -8,3 +8,4 @@ A Paillier SDK by Golang as a wrapper of libpaillier(http://hms.isi.jhu.edu/acsc
 go test -v .
 ```
 or your program.
+

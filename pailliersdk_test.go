@@ -1,7 +1,10 @@
 package pailliersdk
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"encoding/json"
+	"math/big"
 	"strconv"
 	"testing"
 )
@@ -17,9 +20,32 @@ var (
 	ciphertext2 string
 	cipherMul string
 	cipherExp string
-	address = "owneraddress"
+	commitment1 string
+	commitment2 string
+	owner = "Rx3Cihj8SJgrYaPgPj1XpodfHxUQXUxKi"
+	user = "ZsPy7eELS55MXALUhAynUtjsxjeKFbwqy"
 	client = NewPaillierClient()
 )
+
+// 公私钥信息
+const admin_pk = "040bf4ab3b2918fd62ac0f7a718c24f68e7f31c44d4f874580eab031619aeb0fe29471bf2a52ecf14cbcadc1d5d65188d25bb9a274f5dcf44e460e4e364c6b1c94"
+const admin_sk_D = "ea07ded1156e152ef8615661581cf73495c33b431f3fbe372f57370dc80b375b"
+const admin_sk_X = "0bf4ab3b2918fd62ac0f7a718c24f68e7f31c44d4f874580eab031619aeb0fe2"
+const admin_sk_Y = "9471bf2a52ecf14cbcadc1d5d65188d25bb9a274f5dcf44e460e4e364c6b1c94"
+
+func getPrivateKey() *ecdsa.PrivateKey {
+	d, _ := big.NewInt(0).SetString(admin_sk_D, 16)
+	x, _ := big.NewInt(0).SetString(admin_sk_X, 16)
+	y, _ := big.NewInt(0).SetString(admin_sk_Y, 16)
+	return &ecdsa.PrivateKey{
+		PublicKey: ecdsa.PublicKey{
+			Curve: elliptic.P256(),
+			X:     x,
+			Y:     y,
+		},
+		D: d,
+	}
+}
 
 // test paillier client method
 func TestKeyGen(t *testing.T) {
@@ -28,9 +54,9 @@ func TestKeyGen(t *testing.T) {
 	}
 	data,_ := json.Marshal(keyGenData)
 	caller := &FuncCaller{
-		Method:  "KeyGen",
+		Method:  "PaillierKeyGen",
 		Args:    string(data),
-		Address: address,
+		Address: owner,
 	}
 	data,_ = json.Marshal(caller)
 	// call paillier and encrypt testdata
@@ -62,7 +88,7 @@ func TestEnc(t *testing.T) {
 	caller := &FuncCaller{
 		Method:  "PaillierEnc",
 		Args:    string(data),
-		Address: address,
+		Address: owner,
 	}
 	data,_ = json.Marshal(caller)
 	// call paillier and encrypt plaintext1
@@ -89,7 +115,7 @@ func TestEnc(t *testing.T) {
 	caller2 := &FuncCaller{
 		Method:  "PaillierEnc",
 		Args:    string(data),
-		Address: address,
+		Address: owner,
 	}
 	data,_ = json.Marshal(caller2)
 	// call paillier and encrypt plaintext2
@@ -120,7 +146,7 @@ func TestDec(t *testing.T) {
 	caller := &FuncCaller{
 		Method:  "PaillierDec",
 		Args:    string(data),
-		Address: address,
+		Address: owner,
 	}
 	data,_ = json.Marshal(caller)
 	// call paillier and decrypt testdata
@@ -141,16 +167,21 @@ func TestDec(t *testing.T) {
 }
 
 func TestMul(t *testing.T) {
+	ecdsaPrvkey := getPrivateKey()
+	commitment1 = Commit(ecdsaPrvkey, ciphertext1, user)
+	commitment2 = Commit(ecdsaPrvkey, ciphertext2, user)
 	mulData := map[string]string{
 		"publicKey": pubkey,
 		"ciphertext1": ciphertext1,
+		"commitment1": commitment1,
 		"ciphertext2": ciphertext2,
+		"commitment2": commitment2,
 	}
 	data,_ := json.Marshal(mulData)
 	caller := &FuncCaller{
 		Method:  "PaillierMul",
 		Args:    string(data),
-		Address: address,
+		Address: user,
 	}
 	data,_ = json.Marshal(caller)
 	// call paillier and multiply ciphertext
@@ -177,13 +208,14 @@ func TestExp(t *testing.T) {
 	expData := map[string]string{
 		"publicKey": pubkey,
 		"ciphertext": ciphertext1,
+		"commitment": commitment1,
 		"scalar": strconv.Itoa(scaler),
 	}
 	data,_ := json.Marshal(expData)
 	caller := &FuncCaller{
 		Method:  "PaillierExp",
 		Args:    string(data),
-		Address: address,
+		Address: user,
 	}
 	data,_ = json.Marshal(caller)
 	// call paillier and multiply ciphertext
